@@ -13,7 +13,8 @@ function dxdt = dynAffine(t,x,ctrl,p)
 %    .g   @fun      function handle
 % OUT: 
 %   dxdt  E x 1
-% Author: Jonas Umlauft, Last modified: 12/2016
+% Copyright (c) by Jonas Umlauft under BSD License
+% Last modified: Jonas Umlauft 10/2018
 E = size(x,1);
 dxdt = zeros(E,1);
 dxdt(1:E-1) = x(2:E);

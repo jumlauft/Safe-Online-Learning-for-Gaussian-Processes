@@ -1,24 +1,18 @@
 % Copyright (c) by Jonas Umlauft under BSD License
 % Last modified: Jonas Umlauft 10/2018
 
-clear; close all; clc;  rng default;
-addpath(genpath('./mtools'));
-
+clear;clc;  rng default; close all; 
 %% Set Parameters
 disp('Setting parameters...')
 % Basic Parameters
-Tsim = 16;         % Simulation time
+Tsim = 30;         % Simulation time
 sn = 1e-8;         % Observation noise (std deviation)
 E = 2;             % State space dimension
 x0 = [3; 2];       % initial State
-r_min = 1e-6;      % precision bound
+r_min = 1e-5;      % precision bound
 
 % Reference trajectory
 reffun = @(t) refGeneral(t,E+1,@(x) sin(x));    % Cricle
-% reffun = @(t) refGeneral(t,E+1,@(x) 0*ones(size(x))); % zero
-% reffun = @(t) refGeneral(t,E+1,@(tau) 1-sigmf(tau,[20 10]));  % smooth step
-% reffun = @(t) refGeneral(t,E+1,@(tau) 0.5*tau);
-
 
 % Controller gains and beta value
 pFeLi.lam = ones(E-1,1);
@@ -32,14 +26,20 @@ pFeLi.g = pdyn.g;
 
 % GP learning parameters
 optGPR = {'KernelFunction','ardsquaredexponential','fitMethod','none',...
-    'OptimizeHyperparameters','none','KernelParameters',[5; 5; 5], 'ConstantSigma',true,'Sigma',sn};%gprModel.KernelInformation.KernelParameters gprModel.Sigma
-odeopt = odeset('RelTol',1e-3,'AbsTol',1e-6);
+    'OptimizeHyperparameters','none','KernelParameters',[5; 5; 5],...
+    'ConstantSigma',true,'Sigma',sn};
+odeopt = odeset('RelTol',1e-6,'AbsTol',1e-9);
 
 
 % Visualization
-plot_inter = 0;   plot2tex = 1;
-Nte = 1e4; XteMin = -4; XteMax = 4;
+Nte = 4e4; XteMin = -4; XteMax = 4;
 
+
+%% Learn fGP
+disp('Learn fGP...')
+Ntrf = 1e3;
+Xtef = ndgridj(XteMin, XteMax,floor(nthroot(Ntrf,E))*ones(E,1)) ;
+gprMdl = fitrgp(Xtef',pdyn.f(Xtef)); pdyn.f = @(x) predict(gprMdl,x')';
 
 %% Simulating Adaptive Controller
 disp('Simulating Controller...')
@@ -77,69 +77,46 @@ while T(end) < Tsim
     [t,x,te,~,ie] = ode45(dyn,[T(end) Tsim],X(:,end),odeopt);
     
     if ~isempty(ie)
-        switch ie(1)
-            case 1
                 disp(['Event triggered, added at t = ',num2str(t(end))]);
                 Tevent = [Tevent t(end)];
-            case 2
-               disp('Event rmin break');
-                break;
-        end
-    end
-    
-    phi = getPhi(t,x',pFeLi,reffun);
+    end    
+    phi = getPhi(t,x',pFeLi,reffun,r_min);
     T = [T t(2:end)'];  X = [X x(2:end,:)'];  Phi = [Phi phi(2:end)'];
-    % Plot if necessary
-    if plot_inter, visualize; end
 end
 
-%% Viualization and Saving
-disp('Plotting results and saving...')
+%% Viualization
+disp('Plotting results...'); 
 
 Ndte = floor(nthroot(Nte,E)); % Nte = Ndte^E;
 Xte = ndgridj(XteMin, XteMax,Ndte*ones(E,1)) ;
 Xte1 = reshape(Xte(1,:),Ndte,Ndte); Xte2 = reshape(Xte(2,:),Ndte,Ndte);
 
-% Plot trajectories
-figure;  hold on;title('trajectories');
-xd = reffun(T); xlabel('x1'); ylabel('x2');
+% Plot GP variance and trajectory
+figure; hold on; axis tight; xlabel('x1'); ylabel('x2');axis equal;
+title(' GP variance + trajectory'); xlim([-1 4]); ylim([-2 3]);
+xd = reffun(T);
+varte = pFeLi.varfun(Xte);sortvarte = sort(varte);
+cutoff = sortvarte(length(varte) - floor(length(varte)*0.7));
+varte(varte>cutoff) = cutoff;
+surf(Xte1,Xte2,reshape(varte,Ndte,Ndte),'EdgeColor','none','FaceColor','interp'); colormap(flipud(parula));
 plot(X(1,:),X(2,:),'r');
 plot(xd(1,:),xd(2,:),'k--');
 plot(Xtr(1,:),Xtr(2,:),'ro');
 
-
 % Plot tracking error
-title('tracking error');
+figure;  
 norme = sqrt(sum((X-xd(1:E,:)).^2,1));
-figure;  xlabel('t'); ylabel('|e|');
 semilogy(T,norme);
+xlabel('t'); ylabel('|e|'); title('tracking error');
 hold on; 
 semilogy(Tevent,norme(any(Tevent'==T)),'ro');
 
-
 % Plot Phi
+figure; hold on,title('Events');xlabel('t'); ylabel('phi');
 Philim = ones(size(T))*pFeLi.kc/beta;
 Phievent = Phi(any(Tevent'==T));
-figure; hold on,title('Events');xlabel('t'); ylabel('phi');
 plot(T,Phi,'k--');
 plot(T,Philim,'b');
 plot(Tevent,Phi(any(Tevent'==T)),'ro');
 
-
-
-% Plot variance
-varte = pFeLi.varfun(Xte);
-sortvarte = sort(varte);
-cutoff = sortvarte(length(varte) - floor(length(varte)*0.7));
-varte(varte>cutoff) = cutoff;
-
-figure; hold on; axis tight; xlabel('x1'); ylabel('x2');
-title('GP variance'); xlim([-1 4]); ylim([-2 3]);
-surf(Xte1,Xte2,reshape(varte,Ndte,Ndte),'EdgeColor','none','FaceColor','interp'); colormap(flipud(parula))
-plot(Xtr(1,:),Xtr(2,:),'ro');
-
-
 disp('Pau');
-
-
-

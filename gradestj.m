@@ -6,13 +6,8 @@ function [dfdx] = gradestj(fun,x0, eps)
 %    eps     scalar     distance between two points for slope calculation
 % Out:
 %  dfdx      E x N
-%{
-clear, close all,clc; rng default; addpath(genpath('./mtools'));
-E = 2; N = 3; x0 = rand(E,N);  fun = @(x) exp(-sum(x.^2,1));
-dVdx = gradestj(fun,x0)
-dVdxA = -2*x0.*exp(-sum(x0.^2,1))
-%}
-
+% Copyright (c) by Jonas Umlauft under BSD License 
+% Last modified: Jonas Umlauft 10/2018
 [E, N] = size(x0);
 if ~exist('eps','var'), eps = 1e-3; end
 

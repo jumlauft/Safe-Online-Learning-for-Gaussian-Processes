@@ -7,7 +7,9 @@ function [grid, max_dist] = ndgridj(grid_min, grid_max,ns)
 % Out:
 %   grid       Prod(ns) x D
 %   max_dist   1  x 1   maximum distance a point can have in the grid
-% last edited: Jonas Umlauft 12/2016
+%
+% Copyright (c) by Jonas Umlauft under BSD License
+% Last modified: Jonas Umlauft 10/2018
 
 
 D = numel(ns);
