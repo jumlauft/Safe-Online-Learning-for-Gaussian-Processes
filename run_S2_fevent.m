@@ -44,7 +44,7 @@ gprMdl = fitrgp(Xtef',pdyn.f(Xtef)); pdyn.f = @(x) predict(gprMdl,x')';
 %% Simulating Adaptive Controller
 disp('Simulating Controller...')
 % Initialization
-X = x0; T = 0; Xtr = []; Ytr = [];  Tevent = [];Phi = 0;
+X = x0; T = 0; Xtr = []; Ytr = [];  Tevent = 0;Phi = 0;
 
 while T(end) < Tsim
     % Add current point to training set
