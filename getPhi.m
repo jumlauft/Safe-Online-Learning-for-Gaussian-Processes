@@ -17,7 +17,7 @@ function phi = getPhi(t,x,p,reffun,r_min)
 
 xd = reffun(t);   
 r = [p.lam' 1]*(x-xd(1:end-1,:));
-r = max(r_min,r);
-phi = sqrt(p.varfun(x))./abs(r)';
+r = max(r_min,abs(r));
+phi = sqrt(p.varfun(x))./r';
 end
 
