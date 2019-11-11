@@ -2,7 +2,7 @@ The provided Matlab code accompanies the following work:
 
 @Unpublished{umlauft2019adaptive,
   author = {Umlauft, Jonas and and Hirche, Sandra},
-  title  = {Adaptive Feedback Linearization based on Gaussian Processes with event-triggered Learning},
+  title  = {Feedback Linearization based on Gaussian Processes with event-triggered Online Learning},
   note   = {Submitted to IEEE Transactions on Automatic Control},
 }
 
